@@ -27,16 +27,21 @@ rules // menu action strategies
     where
         asts := <get-analysed-asts>
         ; analysis := <get-project-analysis>
-        ; res-rel := <calc-resolution-relation-2> analysis
-        ; <ppdebug(|"res-rel: ")> res-rel
+        ; <ppdebug(|"analysis: ")> analysis
+        ; res-rel :=  <calc-resolution-relation-project-2(|analysis)> asts
 	    ; selected-index := <find-name-index-2(|selected-ast, res-rel)> selected-term
-	    ; <ppdebug(|"selected-index: ")> selected-index
+	    //; <ppdebug(|"selected-index: ")> selected-index
 	    ; (target-paths, target-indices) := <find-rename-target> (selected-index, res-rel)
-	    ; <ppdebug(|"target-indices: ")> target-indices
-	    ; <ppdebug(|"target-paths: ")> target-paths
+	    //; <ppdebug(|"target-indices: ")> target-indices
 		; renamed-asts := <rename-asts(|target-indices, target-paths, new-name)> asts
 		; <ppdebug(|"renamed-asts: ")> renamed-asts
 	    ; check-capture(editor-analyze|renamed-asts, res-rel)
+
+    var-usage(|a): Var(x) -> r*
+    with d := <nabl2-get-ast-property(|a, "decl")> x
+       ; <ppdebug(|"d: ")> d
+       ; r* := <nabl2-get-refs-to-decl(|a)> d
+       ; <ppdebug(|"r*: ")> r*
 
    get-analysis: ast -> analysis
    where
@@ -44,16 +49,17 @@ rules // menu action strategies
      ; <not(nabl2-analysis-has-errors)> analysis
        <+ add-error(|"Renaming impossible", "The program contains errors.")
 
-rules // Step 1: Find all terms to rename
-  calc-resolution-relation-2: analysis -> user-defined-relation
+rules // Step 1: Calculate Resolution Relation
+  calc-resolution-relation-project-2(|analysis): asts -> res-rels
+    where
+      res-rels := <mapconcat(calc-resolution-relation-file-2(|analysis))> asts
+
+  calc-resolution-relation-file-2(|analysis): (_, ast) -> relation
     where
       refs  := <nabl2-get-all-refs(|analysis);filter(is-string-occ)>
-      ; <ppdebug(|"refs: ")> refs
-      ; decs := <nabl2-get-all-decls(|analysis);filter(is-string-occ)>
-      ; <ppdebug(|"decs: ")> refs
       ; ref-dec-pairs := <map(make-resolution-pair(|analysis))> refs
-      ; <ppdebug(|"ref-dec-pairs: ")> ref-dec-pairs
-      ; decs-reflexive-pairs := <filter(is-string-occ);map(make-reflexive-pair)> decs
+      ; <ppdebug(|"analysis: ")> analysis
+      ; decs-reflexive-pairs := <collect(get-dec-reflexive-pair-2(|analysis))> ast
       ; <ppdebug(|"decs-reflexive-pairs: ")> decs-reflexive-pairs
       ; relation := <conc;make-set> (decs-reflexive-pairs, ref-dec-pairs)
       ; user-defined-relation := <filter(is-user-defined)> relation
@@ -68,9 +74,11 @@ rules // Step 1: Find all terms to rename
       ; ref-index := <get-term-index-from-occ> ref
       ; dec-index := <get-term-index-from-occ> dec
 
-  make-reflexive-pair: dec -> (term-index, term-index)
+  get-dec-reflexive-pair-2(|analysis): t -> (dec-index, dec-index)
     where
-      term-index := <get-term-index-from-occ> dec
+  	  <is-string> t
+  	  ; dec := <nabl2-get-ast-property(|analysis, "decl")> t
+  	  ; dec-index := <get-term-index-from-occ> dec
 
   is-user-defined: (ref, dec@TermIndex(path, num-index)) -> <id>
     where
@@ -84,7 +92,6 @@ rules // Step 2: Find occurrence index in selection
   find-name-index-2(|ast, res-rel): term -> occ-index
   where
     <check-selection(|term, ast)> ast
-    ; <ppdebug(|"term: ")> term
   	; occ-index := <collect-one(get-name-index(|res-rel))> term
   	  <+  term-string := <write-to-string> term
   	      ; error-msg := <conc-strings> ("The selected name cannot be renamed:\n", term-string)
@@ -146,28 +153,25 @@ rules //Step 4: Rename terms
 
 rules //Step 5: Checking for capture
 check-capture(analyze|renamed-asts, resolution-relation) =
-    new-analysis := <rerun-analysis(analyze)> renamed-asts
-    ; <ppdebug(|"new-analysis: ")> new-analysis
-    ; new-resolution-relation := <calc-resolution-relation-2; qsort(res-pair-gt)> new-analysis
+    (new-asts, new-analysis) := <rerun-analysis(analyze)> renamed-asts
+    ; new-resolution-relation := <calc-resolution-relation-project-2(|new-analysis); qsort(res-pair-gt)> new-asts
     ; <ppdebug(|"new-resolution-relation: ")> new-resolution-relation
     ; old-resolution-relation := <qsort(res-pair-gt)> resolution-relation
     ; <ppdebug(|"old-resolution-relation: ")> old-resolution-relation
     ; <eq>(old-resolution-relation, new-resolution-relation)
       <+ add-error(|"Capture detected", "This renaming leads to name capture")
 
-  rerun-analysis(analyze): renamed-asts -> new-analysis
+  rerun-analysis(analyze): renamed-asts -> (new-asts, new-analysis)
     where
       input := <make-analysis-input> renamed-asts
-      ; <ppdebug(|"input: ")> input
       ; analysis-result := <analyze> input
-      ; <ppdebug(|"analysis-result: ")> analysis-result
+      ; new-asts := <get-new-asts(|renamed-asts)> analysis-result
       ; new-analysis := <get-new-analysis> analysis-result
 
   make-analysis-input: renamed-asts ->  AnalyzeMulti(project-changes, file-changes, (), ())
     where
       project-analyses := <get-project-constraint-analyses>
       ; analysis := <get-project-entry> project-analyses
-      ; <ppdebug(|"project-entry: ")> analysis
       ; project-changes := (".", Cached(analysis))
       ; file-changes := <map(make-file-change(|project-analyses))> renamed-asts
 
@@ -179,6 +183,17 @@ check-capture(analyze|renamed-asts, resolution-relation) =
       else
         file-change := Changed(renamed-ast, analysis)
       end
+
+  get-new-asts(|renamed-asts):  AnalysisResult(analysis-list) -> analyzed-asts
+    where
+		analyses := <filter(not(is-project-entry))> analysis-list
+		; changed-asts := <map(get-analyzed-ast)> analyses
+		; unchanged-asts := <filter(not(has-changed)); map(get-old-ast)> renamed-asts
+		; analyzed-asts:= <conc> (changed-asts, unchanged-asts)
+
+  get-analyzed-ast : (path, Full(ast, _, _, _,_)) -> (path, ast)
+
+  get-old-ast : (path, ast, renamed-ast) -> (path, ast)
 
   get-new-analysis:  AnalysisResult(analysis-list) -> analysis-object
     where
