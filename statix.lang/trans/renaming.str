@@ -18,6 +18,7 @@ rules // menu action strategies
     where
       {| ErrorMessage:
         new-name := <read-new-name>
+        ; <ppdebug0> 0
         ; renamed-asts := <rename-2(analyze, multi|selected-term, new-name)> selected-ast
         ; renamed-program := <construct-renamed-program(construct-textual-change)> renamed-asts
         <+ show-errors |}

@@ -9,6 +9,7 @@ imports
   nabl2runtime
   nabl2/api
   nabl2/runtime/analysis/main
+  libspoofax/stratego/debug
 
   signatures/statix/lang/-
 
@@ -84,7 +85,11 @@ rules // Analysis
   prettyprint-Statix-TType = nabl2-prettyprint-term
 
 rules // Renaming
-  rename-menu-action : menu-terms -> <rename-action-2(construct-textual-change, editor-analyze, id)> menu-terms
+  rename-menu-action-2 : menu-terms -> result
+    where
+      <ppdebug0> "menu"
+      ; result := <rename-action-2(construct-textual-change, editor-analyze, id)> menu-terms
+  rename-menu-action-integrated : menu-terms -> <nabl2-rename-action(construct-textual-change, editor-analyze, id)> menu-terms
 
   rename-test(|selected-term, new-name) = rename-2(editor-analyze, id|selected-term, new-name);get-ast
 

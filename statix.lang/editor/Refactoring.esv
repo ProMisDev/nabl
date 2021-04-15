@@ -4,4 +4,5 @@ menus
 
   menu: "Refactoring"
   
-  action: "Rename" = rename-menu-action
+  action: "Rename2" = rename-menu-action-2
+  action: "Rename Integrated" = rename-menu-action-integrated
