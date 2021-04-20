@@ -27,14 +27,35 @@ rules // menu action strategies
     where
         asts := <get-analysed-asts>
         ; analysis := <get-project-analysis>
-        ; res-rel := <calc-resolution-relation-2> analysis
-      ; selected-index := <find-name-index-2(|selected-ast, res-rel)> selected-term
-      ; <ppdebug(|"selected-index: ")> selected-index
-      ; (target-paths, target-indices) := <find-rename-target> (selected-index, res-rel)
-      ; <ppdebug(|"target-indices: ")> target-indices
-      ; <ppdebug(|"target-paths: ")> target-paths
-      ; renamed-asts := <rename-asts(|target-indices, target-paths, new-name)> asts
-      ; check-capture(analyze, multi|renamed-asts, res-rel)
+        
+        ; measure-time(
+         res-rel := <calc-resolution-relation-2> analysis
+         , ?res-rel-time)
+        //; <ppdebug(|"res-rel: ")> res-rel
+        ; <cputime-to-seconds; ppdebug(|"res-rel-time: ")> res-rel-time
+        
+        ; measure-time(
+         selected-index := <find-name-index-2(|selected-ast, res-rel)> selected-term
+         , ?selected-index-time)
+        //; <ppdebug(|"selected-index: ")> selected-index
+        ; <cputime-to-seconds;ppdebug(|"selected-index-time: ")> selected-index-time
+        
+        ; measure-time(
+         (target-paths, target-indices) := <find-rename-target> (selected-index, res-rel)
+         , ?find-target-time)
+        //; <ppdebug(|"target-indices: ")> target-indices
+        //; <ppdebug(|"target-paths: ")> target-paths
+        ; <cputime-to-seconds;ppdebug(|"find-target-time: ")> find-target-time
+        
+        ; measure-time(
+         renamed-asts := <rename-asts(|target-indices, target-paths, new-name)> asts
+         , ?rename-time)
+        ; <cputime-to-seconds;ppdebug(|"rename-time: ")> rename-time
+        
+        ; measure-time(
+         check-capture(analyze, multi|renamed-asts, res-rel),
+         ?check-capture-time)
+        ; <cputime-to-seconds;ppdebug(|"check-capture-time: ")> check-capture-time         
 
    get-analysis: ast -> analysis
    where
