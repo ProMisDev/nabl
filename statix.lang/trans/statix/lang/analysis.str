@@ -87,8 +87,11 @@ rules // Analysis
 rules // Renaming
   rename-menu-action-2 : menu-terms -> result
     where
-      <ppdebug0> "menu"
-      ; result := <rename-action-2(construct-textual-change, editor-analyze, id)> menu-terms
+      measure-time(
+         result := <rename-action-2(construct-textual-change, editor-analyze, id)> menu-terms
+         , ?total-time)
+        ; <cputime-to-seconds; ppdebug(|"total-time: ")> total-time
+        
   rename-menu-action-integrated : menu-terms -> <nabl2-rename-action(construct-textual-change, editor-analyze, id)> menu-terms
 
   rename-test(|selected-term, new-name) = rename-2(editor-analyze, id|selected-term, new-name);get-ast
