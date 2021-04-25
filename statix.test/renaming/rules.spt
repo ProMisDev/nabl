@@ -26,6 +26,36 @@ module test
     e(i) = j :- i == j.
 ]]
 
+test rename typeOfExp [[
+module subtype-overloading2
+signature
+ sorts Exp constructors
+   Add: Exp * Exp -> Exp
+ sorts Type constructors
+   INT : Type
+
+rules
+ typeOfExp : scope * Exp -> Type
+
+ [[typeOfExp]](s, Add(e1, e2)) = INT() :-
+ typeOfExp(s, e1) == INT(),
+ typeOfExp(s, e2) == INT().
+]] run rename-test(|#1, "typeOfExpr") to [[
+module subtype-overloading2
+signature
+ sorts Exp constructors
+   Add: Exp * Exp -> Exp
+ sorts Type constructors
+   INT : Type
+
+rules
+ typeOfExpr : scope * Exp -> Type
+
+ typeOfExpr(s, Add(e1, e2)) = INT() :-
+ typeOfExpr(s, e1) == INT(),
+ typeOfExpr(s, e2) == INT().
+]]
+
 test rename rule complex apply [[
 resolve {d}
 
