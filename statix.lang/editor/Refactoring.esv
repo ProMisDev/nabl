@@ -3,6 +3,5 @@ module Refactoring
 menus
 
   menu: "Refactoring"
-  
-  action: "Rename2" = rename-menu-action-2
-  action: "Rename Integrated" = rename-menu-action-integrated
+
+  action: "Rename (Benchamrk)" = rename-menu-action-benchmark

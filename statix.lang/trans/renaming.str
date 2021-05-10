@@ -18,44 +18,34 @@ rules // menu action strategies
     where
       {| ErrorMessage:
         new-name := <read-new-name>
-        ; <ppdebug0> 0
         ; renamed-asts := <rename-2(analyze, multi|selected-term, new-name)> selected-ast
         ; renamed-program := <construct-renamed-program(construct-textual-change)> renamed-asts
         <+ show-errors |}
 
     rename-2(analyze, multi|selected-term, new-name): selected-ast -> renamed-asts
-    where
+      where
         asts := <get-analysed-asts>
         ; analysis := <get-project-analysis>
-        
         ; measure-time(
-         res-rel := <calc-resolution-relation-2> analysis
-         , ?res-rel-time)
-        //; <ppdebug(|"res-rel: ")> res-rel
-        ; <cputime-to-seconds; ppdebug(|"res-rel-time: ")> res-rel-time
-        
+          res-rel := <calc-resolution-relation-2> analysis
+          , ?res-rel-time)
+        ; <cputime-to-seconds; ppdebug(|"1. calculate resolution relation time (s): ")> res-rel-time
         ; measure-time(
-         selected-index := <find-name-index-2(|selected-ast, res-rel)> selected-term
-         , ?selected-index-time)
-        //; <ppdebug(|"selected-index: ")> selected-index
-        ; <cputime-to-seconds;ppdebug(|"selected-index-time: ")> selected-index-time
-        
+          selected-index := <find-name-index-2(|selected-ast, res-rel)> selected-term
+          , ?selected-index-time)
+        ; <cputime-to-seconds;ppdebug(|"2. check selected- ndex time (s): ")> selected-index-time
         ; measure-time(
-         (target-paths, target-indices) := <find-rename-target> (selected-index, res-rel)
-         , ?find-target-time)
-        //; <ppdebug(|"target-indices: ")> target-indices
-        //; <ppdebug(|"target-paths: ")> target-paths
-        ; <cputime-to-seconds;ppdebug(|"find-target-time: ")> find-target-time
-        
+          (target-paths, target-indices) := <find-rename-target> (selected-index, res-rel)
+          , ?find-target-time)
+        ; <cputime-to-seconds;ppdebug(|"3. find rename target time (s): ")> find-target-time
         ; measure-time(
-         renamed-asts := <rename-asts(|target-indices, target-paths, new-name)> asts
-         , ?rename-time)
-        ; <cputime-to-seconds;ppdebug(|"rename-time: ")> rename-time
-        
+          renamed-asts := <rename-asts(|target-indices, target-paths, new-name)> asts
+          , ?rename-time)
+        ; <cputime-to-seconds;ppdebug(|"4. rename transformation time (s): ")> rename-time
         ; measure-time(
-         check-capture(analyze, multi|renamed-asts, res-rel),
-         ?check-capture-time)
-        ; <cputime-to-seconds;ppdebug(|"check-capture-time: ")> check-capture-time         
+          check-capture(analyze, multi|renamed-asts, res-rel),
+          ?check-capture-time)
+        ; <cputime-to-seconds;ppdebug(|"5. check capture time (s): ")> check-capture-time
 
    get-analysis: ast -> analysis
    where
@@ -136,7 +126,6 @@ rules //Step 3: Find occurrences to rename
 
   get-paths: TermIndex(path, _) -> path
 
-
 rules //Step 4: Rename terms
   rename-asts(|target-indices, target-paths, new-name): asts -> renamed-asts
     where
@@ -164,9 +153,7 @@ rules //Step 5: Checking for capture
 check-capture(analyze, multi|renamed-asts, resolution-relation) =
     new-analysis := <rerun-analysis(analyze, multi)> renamed-asts
     ; new-resolution-relation := <calc-resolution-relation-2; qsort(res-pair-gt)> new-analysis
-    ; <ppdebug(|"new-resolution-relation: ")> new-resolution-relation
     ; old-resolution-relation := <qsort(res-pair-gt)> resolution-relation
-    ; <ppdebug(|"old-resolution-relation: ")> old-resolution-relation
     ; <eq>(old-resolution-relation, new-resolution-relation)
       <+ add-error(|"Capture detected", "This renaming leads to name capture")
 
@@ -253,7 +240,7 @@ rules // UI strategies
 
   read-new-name: _ -> new-name
   where
-       new-name := <show-input-dialog(|"Rename", "")> "Enter a new name"
+     new-name := <show-input-dialog(|"Rename", "")> "Enter a new name"
 
 
 rules // Utility strategies
@@ -300,7 +287,5 @@ rules // error handling
       s <+ add-error(|title, message); fail
 
   show-errors =
-    <ppdebug0> "show-errros";
     [(title, message) | _] := <bagof-ErrorMessage> ()
     ; <show-dialog(|title, "ERROR")> message
-    ; <ppdebug0> "show-errros-after"
