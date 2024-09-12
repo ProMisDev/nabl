@@ -9,7 +9,7 @@
   <packaging>jar</packaging>
 
   <properties>
-    <jmh.version>1.22</jmh.version>
+    <jmh.version>1.37</jmh.version>
     <metaborg-version>2.6.0-SNAPSHOT</metaborg-version>
     <java.target>1.8</java.target>
     <uberjar.name>analysis-benchmark</uberjar.name>
@@ -21,7 +21,7 @@
     <dependency>
       <groupId>info.picocli</groupId>
       <artifactId>picocli</artifactId>
-      <version>4.1.4</version>
+      <version>4.7.6</version>
     </dependency>
     <dependency>
       <groupId>org.openjdk.jmh</groupId>
@@ -42,7 +42,7 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.1.2</version>
+      <version>1.5.7</version>
     </dependency>
   </dependencies>
 
@@ -71,12 +71,10 @@
             <configuration>
               <finalName>${uberjar.name}</finalName>
               <transformers>
-                <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>${uberjar.main}</mainClass>
                 </transformer>
-                <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
               </transformers>
               <filters>
                 <filter>
